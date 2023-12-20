@@ -53,21 +53,7 @@ load("./datos_trabajo/temp_andalu_8.RData")
 #' 
 #'     a. Realizar un breve análisis descriptivo del conjunto de datos y generar un 
 #'        histograma de la respuesta.
-#' 
-#'     b. Convertir el `data.frame` a un objeto `sf`, definiendo el CRS mediante la 
-#'        cadena de texto `"+proj=utm +zone=30 +ellps=WGS84 +units=km"`, y representar 
-#'        la distribución espacial de la respuesta. ¿Se observa algún patrón 
-#'        (más o menos claro)?
-#'        
-#'     c. Completar el análisis descriptivo de la variabilidad de gran escala. 
-#'        ¿Aparentemente hay tendencia espacial? En caso afirmativo, 
-#'        sugerir un modelo lineal. 
-#'        
-#'     d. Volver a representar la distribución espacial de la respuesta (o solo las posiciones 
-#'        de observación si surgen dificultades) junto con los límites administrativos de
-#'        Andalucía (que se pueden obtener empleando el paquete `mapSpain`).
 
-### a)
 head(temp_andalu)
 str(temp_andalu)
 summary(temp_andalu)
@@ -82,7 +68,11 @@ lines(density(t), col = 'blue')
 # la distribución no es una normal, hay una ligera asimetría
 
 
-### b)
+#'     b. Convertir el `data.frame` a un objeto `sf`, definiendo el CRS mediante la 
+#'        cadena de texto `"+proj=utm +zone=30 +ellps=WGS84 +units=km"`, y representar 
+#'        la distribución espacial de la respuesta. ¿Se observa algún patrón 
+#'        (más o menos claro)?
+
 # Vamos a convertir los datos a un objeto sf
 crs <- "+proj=utm +zone=30 +ellps=WGS84 +units=km"
 
@@ -96,8 +86,11 @@ plot(temp_andalu_sf["temp"], pch = 20, cex = 2, breaks = "quantile", nbreaks = 4
 # Se observa en general temperatura mayor en en los puntos del suroeste y una 
 # menor en los puntos del noreste.
 
+       
+#'     c. Completar el análisis descriptivo de la variabilidad de gran escala. 
+#'        ¿Aparentemente hay tendencia espacial? En caso afirmativo, 
+#'        sugerir un modelo lineal. 
 
-### c) 
 # Completamos el analisis descriptivo de la variabilidad de gran escala con unos 
 # gráficos de dispersión de la respuesta frente a coordenadas.
 
@@ -128,7 +121,11 @@ hist(res, xlab = "ols residuals", main = "", freq = FALSE)
 lines(density(res), col = 'blue')
 # Los residuos se asemejan bastante a una distribución normal
 
-### d)
+      
+#'     d. Volver a representar la distribución espacial de la respuesta (o solo las posiciones 
+#'        de observación si surgen dificultades) junto con los límites administrativos de
+#'        Andalucía (que se pueden obtener empleando el paquete `mapSpain`).
+
 
 library(mapSpain)
 library(ggplot2)
@@ -148,7 +145,10 @@ ggplot() +
 #' 
 #'     a. Analiza la variabilidad de pequeña escala empleando el estimador clásico 
 #'        del semivariograma, considerando 20 saltos hasta un salto máximo de 290.
-#' 
+
+
+
+
 #'     b. Ajustar a las estimaciones piloto un modelo (isotrópico) de semivariograma
 #'        exponencial y uno esférico, mediante WLS. ¿Con cuál se obtiene un mejor ajuste?
 #'        Interpretar las estimaciones obtenidas de los parámetros del semivariograma.
