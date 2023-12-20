@@ -34,7 +34,6 @@
 
 library(sf)
 setwd("C:/Users/marti/Desktop/UNI/AEDD/TrabajoXeo/AEDD") # Poned vuestra ruta
-
 load("./datos_trabajo/temp_andalu_8.RData") 
 
 
@@ -58,41 +57,43 @@ head(temp_andalu)
 str(temp_andalu)
 summary(temp_andalu)
 
-# asignamos a una variable la temperatura de la que vamos a realizar una analisis descriptivo unidimensional 
+#' Asignamos a una variable a la temperatura de la que vamos a realizar un análisis descriptivo unidimensional 
 t <- temp_andalu$temp 
 summary(t)
 
-# Histograma de la respuesta:
+#' Histograma de la respuesta:
 hist(t, xlab = "temperatura", main = "", freq = FALSE) 
 lines(density(t), col = 'blue')
-# la distribución no es una normal, hay una ligera asimetría
+#' La distribución no es una normal, hay una ligera asimetría
 
-
+#'
 #'     b. Convertir el `data.frame` a un objeto `sf`, definiendo el CRS mediante la 
 #'        cadena de texto `"+proj=utm +zone=30 +ellps=WGS84 +units=km"`, y representar 
 #'        la distribución espacial de la respuesta. ¿Se observa algún patrón 
 #'        (más o menos claro)?
+#'
 
-# Vamos a convertir los datos a un objeto sf
-crs <- "+proj=utm +zone=30 +ellps=WGS84 +units=km"
+#' Vamos a convertir los datos a un objeto sf,
+#' Mantenemos lan y lot como posibles variables expicativas.
+crs <- "+proj=utm +zone=30 +ellps=WGS84 +units=km" # Definimos el CRS
 
 temp_andalu_sf <- st_as_sf(temp_andalu, coords = c("lon", "lat"), remove = FALSE, agr = "constant", crs = crs)
-# Mantenemos lan y lot como posibles variables expicativas.
 
 
-# Representación de la distribución espacial de la respuesta.
+
+#' Representación de la distribución espacial de la respuesta.
 plot(temp_andalu_sf["temp"], pch = 20, cex = 2, breaks = "quantile", nbreaks = 4)
 
-# Se observa en general temperatura mayor en en los puntos del suroeste y una 
-# menor en los puntos del noreste.
+#' Se observa en general temperatura mayor en en los puntos del suroeste y una menor en los puntos del noreste.
 
-       
+#'       
 #'     c. Completar el análisis descriptivo de la variabilidad de gran escala. 
 #'        ¿Aparentemente hay tendencia espacial? En caso afirmativo, 
 #'        sugerir un modelo lineal. 
+#'        
 
-# Completamos el analisis descriptivo de la variabilidad de gran escala con unos 
-# gráficos de dispersión de la respuesta frente a coordenadas.
+#' Completamos el analisis descriptivo de la variabilidad de gran escala con unos 
+#' gráficos de dispersión de la respuesta frente a coordenadas.
 
 x <- temp_andalu_sf$lon
 y <- temp_andalu_sf$lat
@@ -104,37 +105,42 @@ lines(lowess(y, t), lty = 2, lwd = 2, col = 'blue')
 
 par(mfrow = c(1,1))
 
-# Se observa como las componentes espaciales tienen un efecto en la respuesta por lo que es coherente
-# pensar que existe dependencia espacial.
-# Sugerimos un modelo lineal temp ~ lon + lat
+#' Se observa como las componentes espaciales tienen un efecto en la respuesta por lo que es coherente
+#' pensar que existe dependencia espacial.
+#' Sugerimos un modelo lineal temp ~ lon + lat
 
-# Ajustamos el modelo por ols
+#' Ajustamos el modelo por ols
 temp.ols <- lm(temp ~ lon + lat, data = temp_andalu_sf)
 summary(temp.ols)
 
-# Analizamos los residuos
+#' Analizamos los residuos
 res <- residuals(temp.ols)
 summary(res)
 
-# Hacemos un histograma de los residuos
+#' Hacemos un histograma de los residuos
 hist(res, xlab = "ols residuals", main = "", freq = FALSE)
 lines(density(res), col = 'blue')
-# Los residuos se asemejan bastante a una distribución normal
+#' Los residuos se asemejan bastante a una distribución normal
+#' 
 
-      
+#'    
 #'     d. Volver a representar la distribución espacial de la respuesta (o solo las posiciones 
 #'        de observación si surgen dificultades) junto con los límites administrativos de
 #'        Andalucía (que se pueden obtener empleando el paquete `mapSpain`).
+#'        
 
 
 library(mapSpain)
 library(ggplot2)
+andalucia_limites <- mapSpain::esp_get_ccaa(ccaa="andalucia")
 
-# Creamos los cuantiles para la distribuir los colores
+
+#' Creamos los cuantiles para la distribuir los colores
 quantiles <- quantile(temp_andalu_sf$temp, probs = c(0, 0.25, 0.5, 0.75, 1))
 
-# Hacemos el grafico usando ggplot juntando los limites de andalucía junto a 
-# la representación de la distribución espacial de la respuesta
+#' Hacemos el grafico usando ggplot juntando los limites de andalucía junto a 
+#' la representación de la distribución espacial de la respuesta
+#' 
 ggplot() +
   geom_sf(data = andalucia_limites, fill = "transparent", color = "black", lwd = 1) +
   geom_sf(data = temp_andalu_sf, aes(color = temp_andalu_sf$temp), pch = 20, cex = 5) +
@@ -145,6 +151,7 @@ ggplot() +
 #' 
 #'     a. Analiza la variabilidad de pequeña escala empleando el estimador clásico 
 #'        del semivariograma, considerando 20 saltos hasta un salto máximo de 290.
+#'        
 
 
 
