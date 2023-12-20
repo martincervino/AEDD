@@ -36,9 +36,7 @@ library(sf)
 setwd("C:/Users/marti/Desktop/UNI/AEDD/TrabajoXeo/AEDD") # Poned vuestra ruta
 
 load("./datos_trabajo/temp_andalu_8.RData") 
-head(temp_andalu)
-str(temp_andalu)
-summary(temp_andalu)
+
 
 #' 
 #' La fecha límite de entrega de este trabajo es el **29 de diciembre de 2023** (para 
@@ -69,9 +67,81 @@ summary(temp_andalu)
 #'        de observación si surgen dificultades) junto con los límites administrativos de
 #'        Andalucía (que se pueden obtener empleando el paquete `mapSpain`).
 
+### a)
+head(temp_andalu)
+str(temp_andalu)
+summary(temp_andalu)
+
+# asignamos a una variable la temperatura de la que vamos a realizar una analisis descriptivo unidimensional 
+t <- temp_andalu$temp 
+summary(t)
+
+# Histograma de la respuesta:
+hist(t, xlab = "temperatura", main = "", freq = FALSE) 
+lines(density(t), col = 'blue')
+# la distribución no es una normal, hay una ligera asimetría
 
 
+### b)
 
+crs <- "+proj=utm +zone=30 +ellps=WGS84 +units=km"
+
+temp_andalu_sf <- st_as_sf(temp_andalu, coords = c("lon", "lat"), remove = FALSE, agr = "constant", crs = crs)
+# Mantenemos lan y lot como posibles variables expicativas.
+
+
+# Representación de la distribución espacial de la respuesta.
+plot(temp_andalu_sf["temp"], pch = 20, cex = 2, breaks = "quantile", nbreaks = 4)
+
+# Se observa en general temperatura mayor en en los puntos del suroeste y una 
+# menor en los puntos del noreste.
+
+
+### c) 
+# Completamos el analisis descriptivo de la variabilidad de gran escala con unos 
+# gráficos de dispersión de la respuesta frente a coordenadas.
+
+x <- temp_andalu_sf$lon
+y <- temp_andalu_sf$lat
+old.par <- par(mfrow = c(1, 2), omd = c(0.05, 0.95, 0.01, 0.95))
+plot(x, t) # lon frente a temperatura
+lines(lowess(x, t), lty = 2, lwd = 2, col = 'blue')
+plot(y, t) # lat frente a temperatura
+lines(lowess(y, t), lty = 2, lwd = 2, col = 'blue')
+
+par(mfrow = c(1,1))
+
+# Se observa como las componentes espaciales tienen un efecto en la respuesta por lo que es coherente
+# pensar que existe dependencia espacial.
+# Sugerimos un modelo lineal temp ~ lon + lat
+
+# Ajustamos el modelo por ols
+temp.ols <- lm(temp ~ lon + lat, data = temp_andalu_sf)
+summary(temp.ols)
+
+# Analizamos los residuos
+res <- residuals(temp.ols)
+summary(res)
+
+# Hacemos un histograma de los residuos
+hist(res, xlab = "ols residuals", main = "", freq = FALSE)
+lines(density(res), col = 'blue')
+# Los residuos se asemejan bastante a una distribución normal
+
+### d)
+
+library(mapSpain)
+library(ggplot2)
+
+# Creamos los cuantiles para la distribuir los colores
+quantiles <- quantile(temp_andalu_sf$temp, probs = c(0, 0.25, 0.5, 0.75, 1))
+
+# Hacemos el grafico usando ggplot juntando los limites de andalucía junto a 
+# la representación de la distribución espacial de la respuesta
+ggplot() +
+  geom_sf(data = andalucia_limites, fill = "transparent", color = "black", lwd = 1) +
+  geom_sf(data = temp_andalu_sf, aes(color = temp_andalu_sf$temp), pch = 20, cex = 5) +
+  scale_color_gradient(breaks = quantiles, low = "blue", high = "red", name = "Temperature")
 
 
 #' 2. Modelado de la dependencia espacial
