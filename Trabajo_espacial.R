@@ -1,6 +1,6 @@
 #' ---
 #' title: 'AEDD: Trabajo Estadística Espacial'
-#' author: 'Grupo XX'
+#' author: 'Grupo 8'
 #' date: "Curso 2023/2024"
 #' output:
 #'   html_document: default
@@ -32,8 +32,13 @@
 #' de estos datos, utilizando las herramientas explicadas durante las clases.
 #' 
 
-load("temp_andalu_1.RData") # Renombrar según grupo
+library(sf)
+setwd("C:/Users/marti/Desktop/UNI/AEDD/TrabajoXeo/AEDD") # Poned vuestra ruta
+
+load("./datos_trabajo/temp_andalu_8.RData") 
+head(temp_andalu)
 str(temp_andalu)
+summary(temp_andalu)
 
 #' 
 #' La fecha límite de entrega de este trabajo es el **29 de diciembre de 2023** (para 
@@ -63,7 +68,12 @@ str(temp_andalu)
 #'     d. Volver a representar la distribución espacial de la respuesta (o solo las posiciones 
 #'        de observación si surgen dificultades) junto con los límites administrativos de
 #'        Andalucía (que se pueden obtener empleando el paquete `mapSpain`).
-#'        
+
+
+
+
+
+
 #' 2. Modelado de la dependencia espacial
 #' 
 #'     a. Analiza la variabilidad de pequeña escala empleando el estimador clásico 
