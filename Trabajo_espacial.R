@@ -83,7 +83,7 @@ lines(density(t), col = 'blue')
 
 
 ### b)
-
+# Vamos a convertir los datos a un objeto sf
 crs <- "+proj=utm +zone=30 +ellps=WGS84 +units=km"
 
 temp_andalu_sf <- st_as_sf(temp_andalu, coords = c("lon", "lat"), remove = FALSE, agr = "constant", crs = crs)
