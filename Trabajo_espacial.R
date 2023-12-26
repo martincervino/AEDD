@@ -320,6 +320,11 @@ summary_cv(cv_exp)
 
 summary_cv(cv_sph)
 
+#' Viendo las medidas calculadas nos podemos fijar en las tres últimas que tienen
+#' en cuenta la estimación de la varianza kriging. En estas tres medidas _dme_ ,
+#' _dmse_ y  _rwmse_ el modelo esférico obtiene mejores resultados en 2 de las 3 medidas.
+#'  _dme_ mas cercano a 0, _dmse_ mas cercano a 1 pero _rwmse_ mas grande. Por ello
+#'  consideramos que el modelo esférico es mejor modelo.
 
 #'        
 #' #### **3. Predicción espacial**
@@ -329,8 +334,53 @@ summary_cv(cv_sph)
 #'    posiciones de observación si surgen dificultades)._**
 #'        
 
+library(stars)
+
+buffer <- temp_andalu_sf %>% st_geometry() %>% st_buffer(40)
+grid<- buffer %>% st_as_stars(andalucia_limites$geometry, nx=150,ny=75)
+
+coord <- st_coordinates(grid)
+grid$lon <- coord$x
+grid$lat <- coord$y
+
+grid <- grid %>% st_crop(buffer)
 
 
 #'        
 #'  **_b. Empleando el modelo obtenido en el ejercicio anterior, calcular las 
-#'    prediccies y varianzas kriging en la rejilla de predicción, y representarlas._**
+#'    predicciones y varianzas kriging en la rejilla de predicción, y representarlas._**
+
+
+pred<- krige(formula = temp~lon+lat, locations=temp_andalu_sf, model=fit_sph, newdata=grid)
+
+grid$var1.pred <- pred$var1.pred
+grid$var1.var <- pred$var1.var
+
+library(gridExtra)
+p1 <- ggplot() + geom_stars(data = grid, aes(fill = var1.pred, x = x, y = y)) +
+  scale_fill_viridis_c() + geom_sf(data = temp_andalu_sf) +
+  coord_sf(lims_method = "geometry_bbox")
+
+final_plot <- p1 +
+  geom_sf(data = andalucia_limites, color = "black", fill = NA) +
+  theme_minimal()
+
+print(final_plot)
+
+p2 <- ggplot() + geom_stars(data = grid, aes(fill = var1.var, x = x, y = y)) +
+  scale_fill_viridis_c() + geom_sf(data = temp_andalu_sf) +
+  coord_sf(lims_method = "geometry_bbox")
+
+final_plot2 <- p2 +
+  geom_sf(data = andalucia_limites, color = "black", fill = NA) +
+  theme_minimal()
+
+print(final_plot2)
+
+
+# plot(grid["var1.pred"], breaks = "equal", col = sf.colors(64), key.pos = 4,
+#      main = "Predicciones kriging")
+# plot(grid["var1.var"], breaks = "equal", col = sf.colors(64), key.pos = 4,
+#      main = "Varianzas kriging")
+
+
