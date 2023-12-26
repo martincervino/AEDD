@@ -33,6 +33,7 @@
 #' 
 
 library(sf)
+
 setwd("C:/Users/marti/Desktop/UNI/AEDD/TrabajoXeo/AEDD") # Poned vuestra ruta
 load("./datos_trabajo/temp_andalu_8.RData") 
 
@@ -209,11 +210,17 @@ range_exp <- 3*fit_exp$range[2]
 #' Parámetros del semivariograma:
 params_exp <- matrix(c("nugget_exp", "sill_exp", "range_exp", nugget_exp, sill_exp, range_exp), 2, 3, byrow = TRUE)
 params_exp
-#' INTERPRETAR PARÁMETROS 
+
+#' El nugget tiene valor 0 lo cual indica que no hay variabilidad espacial a distancias muy cortas, 
+#' esto puede significar que no hay irregularidades locales o fluctuaciones a escalas pequeñas.
+#' Existe por lo tanto una fuerte dependencia en distancias cortas. El sill es de 2.19, lo cual nos indica el 
+#' punto en el cual se llega a la variabilidad máxima. El rango es de 100.50 el cual nos indica la distancia
+#' donde  el variograma alcanza el sill o se estabiliza.
 
 
 plot(vario, fit_exp)
 
+#' Pintamos los parametros del variograma:
 plot(vario$dist, vario$gamma, xlab = "distance", ylab = "semivariance",
      xlim = c(0, max(range_exp*1.1, maxlag)), ylim = c(0, sill_exp*1.2))
 lines(variogramLine(fit_exp, maxdist = max(range_exp*1.1, maxlag)))
@@ -236,11 +243,15 @@ range_sph <- fit_sph$range[2]
 params_sph <- matrix(c("nugget_sph", "sill_sph", "range_sph", nugget_sph, sill_sph, range_sph), 2, 3, byrow = TRUE)
 params_sph 
 
-#' INTERPRETAR PARÁMETROS 
-
+#' En el modelo esférico el nugget tiene valor 0.24 lo cual indica que hay más variabilidad espacial a distancias cortas, 
+#' que significa que hay mas irregularidades locales o fluctuaciones a escalas pequeñas.
+#' No existe por lo tanto una dependencia tan fuerte en distancias cortas. El sill es de 2.13 lo cual nos indica el 
+#' punto en el que se llega a la variabilidad máxima. El rango es de 87.89, menor que en el modelo exponencial,
+#' nos indica la distancia donde  el variograma alcanza el sill o se estabiliza.
 
 plot(vario, fit_sph)
 
+#' Pintamos los parametros del variograma:
 plot(vario$dist, vario$gamma, xlab = "distance", ylab = "semivariance",
      xlim = c(0, max(range_sph*1.1, maxlag)), ylim = c(0, sill_sph*1.2))
 lines(variogramLine(fit_sph, maxdist = max(range_sph*1.1, maxlag)))
@@ -255,7 +266,7 @@ abline(h = sill_sph, lty = 3)
 attr(fit_exp, "SSErr")
 #' Modelo esférico:
 attr(fit_sph, "SSErr")
-#' Parece que el modelo esférico obtiene un mejor ajuste, acontinuación haremos un validación
+#' Parece que el modelo esférico obtiene un mejor ajuste, a continuación haremos validación
 #' cruzada, (mas recomendable). 
 
 
@@ -265,6 +276,51 @@ attr(fit_sph, "SSErr")
 #' **_c) Emplear medidas de validación cruzada, considerando 10 grupos, para seleccionar 
 #'    el modelo final (establecer la semilla igual al número de grupo multiplicado 
 #'    por 10; no es necesario generar gráficos). _**
+#' 
+
+library(gstat)
+set.seed(8*10)# Fijamos una semilla de aleatorización
+
+cv_exp <- krige.cv(formula = temp ~ lon + lat, locations = temp_andalu_sf,
+                   model = fit_exp, nfold = 10)
+
+cv_sph <- krige.cv(formula = temp ~ lon + lat, locations = temp_andalu_sf,
+                   model = fit_sph, nfold = 10)
+
+summary_cv <- function(cv.data, na.rm = FALSE,
+                       tol = sqrt(.Machine$double.eps)) {
+  err <- cv.data$residual      # Errores
+  obs <- cv.data$observed
+  z <- cv.data$zscore
+  w <- 1/pmax(cv.data$var1.var, tol) # Ponderación según varianza kriging
+  if(na.rm) {
+    is.a <- !is.na(err)
+    err <- err[is.a]
+    obs <- obs[is.a]
+    z <- z[is.a]
+    w <- w[is.a]
+  }
+  perr <- 100*err/pmax(obs, tol)  # Errores porcentuales
+  return(c(
+    # Medidas de error tradicionales
+    me = mean(err),           # Error medio
+    rmse = sqrt(mean(err^2)), # Raíz del error cuadrático medio
+    mae = mean(abs(err)),     # Error absoluto medio
+    mpe = mean(perr),         # Error porcentual medio
+    mape = mean(abs(perr)),   # Error porcentual absoluto medio
+    r.squared = 1 - sum(err^2)/sum((obs - mean(obs))^2), # Pseudo R-cuadrado
+    # Medidas de error que tienen en cuenta la varianza kriging
+    dme = mean(z),            # Error estandarizado medio
+    dmse = sqrt(mean(z^2)),    # Error cuadrático medio adimensional
+    rwmse = sqrt(weighted.mean(err^2, w)) # Raíz del ECM ponderado
+  ))
+}
+
+summary_cv(cv_exp)
+
+summary_cv(cv_sph)
+
+
 #'        
 #' #### **3. Predicción espacial**
 #' 
