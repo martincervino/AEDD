@@ -154,6 +154,7 @@ shapiro.test(res)
 library(mapSpain)
 library(ggplot2)
 andalucia_limites <- mapSpain::esp_get_ccaa(ccaa="andalucia")
+andalucia_limites <- st_transform(andalucia_limites, crs = crs)
 
 
 #' Creamos los cuantiles para la distribuir los colores
@@ -336,51 +337,53 @@ summary_cv(cv_sph)
 
 library(stars)
 
-buffer <- temp_andalu_sf %>% st_geometry() %>% st_buffer(40)
-grid<- buffer %>% st_as_stars(andalucia_limites$geometry, nx=150,ny=75)
+
+limites <- temp_andalu_sf %>% st_geometry()
+
+#' Grid de 150x75
+grid<- limites %>% st_as_stars(nx=150, ny=75)
 
 coord <- st_coordinates(grid)
 grid$lon <- coord$x
 grid$lat <- coord$y
 
-grid <- grid %>% st_crop(buffer)
+#' Recortamos la rejilla con los límites de la región de Andalucía (andalucia_limites).
+grid <- grid %>% st_crop(andalucia_limites)
+#' Grid intersecada con limites de Adalucía
+plot(grid)
+
 
 
 #'        
 #'  **_b. Empleando el modelo obtenido en el ejercicio anterior, calcular las 
 #'    predicciones y varianzas kriging en la rejilla de predicción, y representarlas._**
+#'    
 
-
+# Elegimos nuestra función lineal, nuestro sf, el modelo esférico y la rejilla
 pred<- krige(formula = temp~lon+lat, locations=temp_andalu_sf, model=fit_sph, newdata=grid)
 
 grid$var1.pred <- pred$var1.pred
 grid$var1.var <- pred$var1.var
 
+# Utilizamos ggplot para representar:
 library(gridExtra)
 p1 <- ggplot() + geom_stars(data = grid, aes(fill = var1.pred, x = x, y = y)) +
   scale_fill_viridis_c() + geom_sf(data = temp_andalu_sf) +
-  coord_sf(lims_method = "geometry_bbox")
+  coord_sf(lims_method = "geometry_bbox") +
+  labs(title = "Predicciones kriging de la temperatura en la comunidad de Andalucía",
+       fill = "Temperatura")
 
-final_plot <- p1 +
-  geom_sf(data = andalucia_limites, color = "black", fill = NA) +
-  theme_minimal()
-
-print(final_plot)
+plot(p1)
 
 p2 <- ggplot() + geom_stars(data = grid, aes(fill = var1.var, x = x, y = y)) +
   scale_fill_viridis_c() + geom_sf(data = temp_andalu_sf) +
-  coord_sf(lims_method = "geometry_bbox")
+  coord_sf(lims_method = "geometry_bbox") +
+  labs(title = "Varianzas kriging de la temperatura en la comunidad de Andalucía",
+       fill = "Varianza")
 
-final_plot2 <- p2 +
-  geom_sf(data = andalucia_limites, color = "black", fill = NA) +
-  theme_minimal()
-
-print(final_plot2)
+plot(p2)
 
 
-# plot(grid["var1.pred"], breaks = "equal", col = sf.colors(64), key.pos = 4,
-#      main = "Predicciones kriging")
-# plot(grid["var1.var"], breaks = "equal", col = sf.colors(64), key.pos = 4,
-#      main = "Varianzas kriging")
+
 
 
